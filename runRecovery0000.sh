@@ -1,0 +1,1 @@
+python recoverLabels.py --kitti_dir=/disk/vanishing_data/oi748/KITTI-360/KITTI-360 --output_dir=/disk/vanishing_data/oi748/recovered2

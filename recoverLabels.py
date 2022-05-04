@@ -1,6 +1,7 @@
 from accumulation import *
 import argparse
 import os 
+from multiprocessing import Pool
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-k", "--kitti_dir", help="path to kitti360 dataset")
@@ -11,7 +12,8 @@ output_dir = args.output_dir
 
 
 for sequence in os.listdir(os.path.join(root_dir,"data_3d_raw")):
-    all_spcds = os.listdir(os.path.join(os.path.join(os.path.join(root_dir,"data_3d_semantics"),sequence),"static"))
+    print(sequence)
+    all_spcds = os.listdir(os.path.join(os.path.join(os.path.join(root_dir,"data_3d_semantics/train"),sequence),"static"))
     all_spcds.sort()
     for i in range(len(all_spcds)):
         spcd = all_spcds[i]
@@ -27,7 +29,7 @@ for sequence in os.listdir(os.path.join(root_dir,"data_3d_raw")):
         first_frame = int(partial_name[0])
         last_frame = int(partial_name[1])
         PA = PointAccumulation(root_dir, output_dir, sequence, first_frame, last_frame, 20, 1, 0.02, True, True)
-        PA.createOutputDir()
+        #PA.createOutputDir()
         PA.loadTransformation()
         PA.getInterestedWindow()
         PA.loadTimestamps()

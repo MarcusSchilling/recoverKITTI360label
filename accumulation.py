@@ -1,3 +1,4 @@
+from cProfile import label
 from utils import *
 from commons import *
 import numpy as np 
@@ -28,8 +29,8 @@ class PointAccumulation:
         self.baseDir = self.rootDir + "/data_3d_raw/" + self.sequenceName
         self.poseDir = self.rootDir + "/data_poses/" + self.sequenceName
         self.calibDir = self.rootDir + "/calibration"
-        self.superpcDir_static = self.rootDir + "/data_3d_semantics/" + self.sequenceName + "/static/"
-        self.superpcDir_dynamic = self.rootDir + "/data_3d_semantics/" + self.sequenceName + "/dynamic/"
+        self.superpcDir_static = self.rootDir + "/data_3d_semantics/train/" + self.sequenceName + "/static/"
+        self.superpcDir_dynamic = self.rootDir + "/data_3d_semantics/train/" + self.sequenceName + "/dynamic/"
 
         self.Tr_cam_pose = [] #cam0x -> pose
         self.Tr_cam_velo = np.empty((4,4)) #cam00 -> velo
@@ -409,16 +410,20 @@ class PointAccumulation:
             writeTimestampToFile(self.output_file_timestamps, self.Ts)
         else:
             label_folder = self.outputPathLabel
+            semantics_label_folder = label_folder + "/semantics/"
             mkdir(label_folder)
+            mkdir(semantics_label_folder)
             if (self.verbose):
                 print("write labels to folder %s ...\n" % label_folder)
-            writeLabelsToFolder(label_folder, self.labels, self.Ts, self.globalIdx, self.numPts)
+            writeLabelsToFolder(label_folder , self.labels, self.Ts, self.globalIdx, self.numPts)
+            writeInstanceLabelsToFolder(semantics_label_folder, self.instance, self.Ts, self.globalIdx, self.numPts)
 
     
     def recoverLabel(self,superPointCloud,superPointCloudPrev,superPointCloudNext,rangeS=0.1):
 
         self.labels = np.zeros(len(self.Ts))
-        
+        self.instance = np.zeros(len(self.Ts))
+
         if not superPointCloudPrev is None :
 
             superpcPath_static = self.superpcDir_static + superPointCloudPrev
@@ -431,10 +436,10 @@ class PointAccumulation:
         
        
             superpcd_static = readBinaryPly(superpcPath_static,n_pts_static, True)
-            superpcd_static_selec = superpcd_static[:,[0,1,2,6]]
+            superpcd_static_selec = superpcd_static[:,[0,1,2,6,7]]
             if n_pts_dynamic != 0:
                 superpcd_dynamic = readBinaryPly(superpcPath_dynamic,n_pts_dynamic,False)
-                superpcd_dynamic_selec = superpcd_dynamic[:,[0,1,2,6]]
+                superpcd_dynamic_selec = superpcd_dynamic[:,[0,1,2,6,7]]
 
                 superpcd_combined = np.concatenate((superpcd_static_selec, superpcd_dynamic_selec))
             else: 
@@ -443,8 +448,10 @@ class PointAccumulation:
 
             tree = KDTree(superpcd_combined[:,:3]) 
             dist, ind = tree.query(self.Md) 
-            mask = dist[:,0]<rangeS 
+            mask = dist[:,0]<rangeS
+            np.savetxt("foo.csv", superpcd_combined, delimiter=",")
             self.labels[mask] = superpcd_combined[ind[:,0][mask],3]
+            self.instance[mask] = superpcd_combined[ind[:,0][mask],4]
 
         if not superPointCloudNext is None : 
             superpcPath_static = self.superpcDir_static + superPointCloudNext 
@@ -457,10 +464,10 @@ class PointAccumulation:
         
        
             superpcd_static = readBinaryPly(superpcPath_static,n_pts_static, True)
-            superpcd_static_selec = superpcd_static[:,[0,1,2,6]]
+            superpcd_static_selec = superpcd_static[:,[0,1,2,6,7]]
             if n_pts_dynamic != 0:
                 superpcd_dynamic = readBinaryPly(superpcPath_dynamic,n_pts_dynamic,False)
-                superpcd_dynamic_selec = superpcd_dynamic[:,[0,1,2,6]]
+                superpcd_dynamic_selec = superpcd_dynamic[:,[0,1,2,6,7]]
 
                 superpcd_combined = np.concatenate((superpcd_static_selec, superpcd_dynamic_selec))
             else: 
@@ -471,7 +478,8 @@ class PointAccumulation:
             dist, ind = tree.query(self.Md)
             mask = dist[:,0]<rangeS
             self.labels[mask] = superpcd_combined[ind[:,0][mask],3]
-
+            self.instance[mask] = superpcd_combined[ind[:,0][mask],4]
+        
         superpcPath_static = self.superpcDir_static + superPointCloud
         superpcd_static = open3d.io.read_point_cloud(superpcPath_static)
         n_pts_static = np.asarray(superpcd_static.points).shape[0]
@@ -481,10 +489,10 @@ class PointAccumulation:
         n_pts_dynamic = np.asarray(superpcd_dynamic.points).shape[0]
         
         superpcd_static = readBinaryPly(superpcPath_static,n_pts_static, True)
-        superpcd_static_selec = superpcd_static[:,[0,1,2,6]]
+        superpcd_static_selec = superpcd_static[:,[0,1,2,6,7]]
         if n_pts_dynamic != 0:
             superpcd_dynamic = readBinaryPly(superpcPath_dynamic,n_pts_dynamic,False)
-            superpcd_dynamic_selec = superpcd_dynamic[:,[0,1,2,6]]
+            superpcd_dynamic_selec = superpcd_dynamic[:,[0,1,2,6,7]]
 
             superpcd_combined = np.concatenate((superpcd_static_selec, superpcd_dynamic_selec))
         else: 
@@ -495,4 +503,4 @@ class PointAccumulation:
         dist, ind = tree.query(self.Md)
         mask = dist[:,0]<rangeS
         self.labels[mask] = superpcd_combined[ind[:,0][mask],3]
- 
+        self.instance[mask] = superpcd_combined[ind[:,0][mask],4] 

@@ -226,6 +226,19 @@ def writeLabelsToFolder(path, labels, Ts, indices, numPts):
         labelSaved[array_indices[lookedAt]] = labels[lookedAt].reshape(-1)
         labelSaved.tofile(name_file)
 
+def writeInstanceLabelsToFolder(path, labels, Ts, indices, numPts):
+    array_Ts = np.array(Ts).reshape(-1)
+    array_indices = np.array(indices).reshape(-1)
+    values = np.unique(array_Ts)
+    for val in values:
+        name_file = path + "/%010d.bin" % val
+        nPts = numPts[val]
+        lookedAt = array_Ts==val 
+        labelSaved = np.ones(nPts,dtype=np.uint16)
+        print(labels[lookedAt].reshape(-1)[0])
+        print(type(labels[lookedAt].reshape(-1)[0]))
+        labelSaved[array_indices[lookedAt]] = labels[lookedAt].reshape(-1)
+        labelSaved.tofile(name_file)
 
 def writePointCloudsToFolder(path, Md, labels, Ts, indices, numPts):
     array_Ts = np.array(Ts).reshape(-1)
